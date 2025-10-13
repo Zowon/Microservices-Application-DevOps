@@ -1,0 +1,86 @@
+version: "3.8"
+services:
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "5001:5000"
+    environment:
+      - SERVICE_NAME=auth-service
+    depends_on:
+      - mysql-db
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "5002:5000"
+    environment:
+      - SERVICE_NAME=user-service
+    depends_on:
+      - mysql-db
+
+  book-service:
+    build: ./book-service
+    ports:
+      - "5003:5000"
+    environment:
+      - SERVICE_NAME=book-service
+    depends_on:
+      - mysql-db
+
+  review-service:
+    build: ./review-service
+    ports:
+      - "5004:5000"
+    environment:
+      - SERVICE_NAME=review-service
+
+  cart-service:
+    build: ./cart-service
+    ports:
+      - "5005:5000"
+    environment:
+      - SERVICE_NAME=cart-service
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "5006:5000"
+    environment:
+      - SERVICE_NAME=order-service
+    depends_on:
+      - mysql-db
+
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "5007:5000"
+    environment:
+      - SERVICE_NAME=payment-service
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "5008:5000"
+    environment:
+      - SERVICE_NAME=notification-service
+
+  frontend-service:
+    build: ./frontend-service
+    ports:
+      - "8080:5000"
+    environment:
+      - SERVICE_NAME=frontend-service
+
+  mysql-db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: bookstore
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
