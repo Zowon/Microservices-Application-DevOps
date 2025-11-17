@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microservices Bookstore Application - Kubernetes Deployment Guide</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; }
+        h3 { color: #7f8c8d; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #3498db; color: white; }
+        pre { background-color: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        code { background-color: #e9ecef; padding: 2px 4px; border-radius: 3px; }
+        .diagram-placeholder { background-color: #ecf0f1; padding: 20px; text-align: center; border: 2px dashed #bdc3c7; margin: 20px 0; }
+        .section { margin: 30px 0; }
+        .command { font-family: 'Courier New', monospace; background-color: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Microservices Bookstore Application</h1>
+    <h2>Kubernetes Deployment Guide</h2>
+    <h3 style="text-align: center;">Assignment-2 Report</h3>
+    
+    <div class="section">
+        <h2>Table of Contents</h2>
+        <ol>
+            <li><a href="#overview">Application Overview</a></li>
+            <li><a href="#architecture">Architecture Diagram</a></li>
+            <li><a href="#components">Kubernetes Components</a></li>
+            <li><a href="#yaml">YAML Files Explanation</a></li>
+            <li><a href="#deployment">Deployment Steps</a></li>
+            <li><a href="#commands">Kubernetes Commands Guide</a></li>
+            <li><a href="#verification">Verification Steps</a></li>
+        </ol>
+    </div>
+
+    <div class="section" id="overview">
+        <h2>1. Application Overview</h2>
+        
+        <h3>What the Application Does</h3>
+        <p>This is a comprehensive microservices-based bookstore application consisting of 9 interconnected services:</p>
+        <ul>
+            <li><strong>Frontend Service</strong> - User interface and web application</li>
+            <li><strong>Auth Service</strong> - Authentication and authorization management</li>
+            <li><strong>User Service</strong> - User profile and account management</li>
+            <li><strong>Book Service</strong> - Book catalog and inventory management</li>
+            <li><strong>Review Service</strong> - Book reviews and ratings system</li>
+            <li><strong>Cart Service</strong> - Shopping cart functionality</li>
+            <li><strong>Order Service</strong> - Order processing and management</li>
+            <li><strong>Payment Service</strong> - Payment processing and transactions</li>
+            <li><strong>Notification Service</strong> - Email and push notifications</li>
+            <li><strong>MySQL Database</strong> - Centralized data storage for persistence</li>
+        </ul>
+
+        <h3>Request Flow Inside Kubernetes</h3>
+        
+        <h4>External User Request:</h4>
+        <ol>
+            <li>User sends HTTP request through browser</li>
+            <li>Ingress Controller routes based on path/host rules</li>
+            <li>Service Layer load balances to available pods</li>
+            <li>Pod/Container processes the request</li>
+            <li>Database access if needed (MySQL)</li>
+            <li>Response returns through same path</li>
+        </ol>
+
+        <h4>Internal Service Communication:</h4>
+        <ol>
+            <li>Service discovery through DNS resolution</li>
+            <li>Load balancing across healthy pods</li>
+            <li>HTTP/REST API communication between services</li>
+            <li>Direct connection to MySQL service for data</li>
+        </ol>
+    </div>
+
+    <div class="section" id="architecture">
+        <h2>2. Architecture Diagram</h2>
+        
+        <div class="diagram-placeholder">
+            <h3>Architecture Diagram</h3>
+            <p>[See architecture-diagram.png for visual representation]</p>
+            <p>Key Components:</p>
+            <ul style="text-align: left; display: inline-block;">
+                <li>Ingress Controller: Routes external traffic to appropriate services</li>
+                <li>Services: Provide stable network endpoints for pods</li>
+                <li>Deployments: Manage pod replicas and ensure availability</li>
+                <li>ConfigMaps: Store configuration data</li>
+                <li>Secrets: Store sensitive data (passwords)</li>
+                <li>PersistentVolumeClaim: Provides persistent storage for MySQL</li>
+                <li>MySQL Database: Stateful component with persistent storage</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section" id="components">
+        <h2>3. Kubernetes Components</h2>
+        
+        <table>
+            <tr>
+                <th>Component</th>
+                <th>Purpose</th>
+                <th>Configuration</th>
+            </tr>
+            <tr>
+                <td>Namespace</td>
+                <td>Resource isolation</td>
+                <td><code>microservices-app</code></td>
+            </tr>
+            <tr>
+                <td>ConfigMap</td>
+                <td>Non-sensitive config</td>
+                <td>Service names, DB host</td>
+            </tr>
+            <tr>
+                <td>Secret</td>
+                <td>Sensitive data</td>
+                <td>DB passwords, API keys</td>
+            </tr>
+            <tr>
+                <td>PVC</td>
+                <td>Persistent storage</td>
+                <td>5Gi for MySQL</td>
+            </tr>
+            <tr>
+                <td>Deployment</td>
+                <td>Pod management</td>
+                <td>2 replicas per service</td>
+            </tr>
+            <tr>
+                <td>Service</td>
+                <td>Network endpoints</td>
+                <td>ClusterIP type</td>
+            </tr>
+            <tr>
+                <td>Ingress</td>
+                <td>External access</td>
+                <td>NGINX controller</td>
+            </tr>
+            <tr>
+                <td>MySQL</td>
+                <td>Database</td>
+                <td>Stateful with PVC</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section" id="yaml">
+        <h2>4. YAML Files Explanation</h2>
+        
+        <ul>
+            <li><strong>namespace.yaml</strong> - Creates logical separation for all application resources.</li>
+            <li><strong>configmap.yaml</strong> - Stores configuration data like service names and database host.</li>
+            <li><strong>secret.yaml</strong> - Securely stores sensitive information like database passwords.</li>
+            <li><strong>pvc.yaml</strong> - Provides persistent storage for MySQL database (5Gi).</li>
+            <li><strong>mysql-deployment.yaml</strong> - Deploys MySQL database with persistent volume mounting.</li>
+            <li><strong>mysql-service.yaml</strong> - Creates internal service endpoint for MySQL database.</li>
+            <li><strong>deployment.yaml</strong> - Deploys all 9 microservices with 2 replicas each.</li>
+            <li><strong>service.yaml</strong> - Creates ClusterIP services for all microservices.</li>
+            <li><strong>ingress.yaml</strong> - Configures external access routing to internal services.</li>
+        </ul>
+    </div>
+
+    <div class="section" id="deployment">
+        <h2>5. Deployment Steps</h2>
+        
+        <h3>Prerequisites:</h3>
+        <ul>
+            <li>Minikube or Kind cluster installed</li>
+            <li>kubectl configured</li>
+            <li>Docker installed</li>
+            <li>Ingress controller enabled</li>
+        </ul>
+
+        <h3>Step-by-Step Deployment:</h3>
+        
+        <h4>1. Start Minikube:</h4>
+        <div class="command">minikube start</div>
+
+        <h4>2. Enable Ingress:</h4>
+        <div class="command">minikube addons enable ingress</div>
+
+        <h4>3. Create Namespace:</h4>
+        <div class="command">kubectl apply -f k8s/namespace.yaml</div>
+
+        <h4>4. Apply Configuration:</h4>
+        <div class="command">kubectl apply -f k8s/configmap.yaml<br>kubectl apply -f k8s/secret.yaml</div>
+
+        <h4>5. Setup Storage:</h4>
+        <div class="command">kubectl apply -f k8s/pvc.yaml</div>
+
+        <h4>6. Deploy Database:</h4>
+        <div class="command">kubectl apply -f k8s/mysql-deployment.yaml<br>kubectl apply -f k8s/mysql-service.yaml</div>
+
+        <h4>7. Deploy Services:</h4>
+        <div class="command">kubectl apply -f k8s/deployment.yaml<br>kubectl apply -f k8s/service.yaml</div>
+
+        <h4>8. Configure Ingress:</h4>
+        <div class="command">kubectl apply -f k8s/ingress.yaml</div>
+
+        <h4>9. Build Docker Images:</h4>
+        <div class="command">docker build -t auth-service ./auth-service<br># (Repeat for all services)</div>
+
+        <h4>10. Load Images to Minikube:</h4>
+        <div class="command">minikube image load auth-service:latest<br># (Repeat for all services)</div>
+    </div>
+
+    <div class="section" id="commands">
+        <h2>6. Kubernetes Commands Guide</h2>
+        
+        <table>
+            <tr>
+                <th>Command</th>
+                <th>Purpose</th>
+                <th>Example</th>
+            </tr>
+            <tr>
+                <td><code>kubectl get pods</code></td>
+                <td>List all pods</td>
+                <td><code>kubectl get pods -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl get services</code></td>
+                <td>List services</td>
+                <td><code>kubectl get svc -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl get deployments</code></td>
+                <td>List deployments</td>
+                <td><code>kubectl get deploy -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl logs</code></td>
+                <td>View pod logs</td>
+                <td><code>kubectl logs -f deployment/auth-service -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl describe</code></td>
+                <td>Resource details</td>
+                <td><code>kubectl describe pod &lt;pod-name&gt; -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl exec</code></td>
+                <td>Execute in pod</td>
+                <td><code>kubectl exec -it &lt;pod-name&gt; -n microservices-app -- bash</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl port-forward</code></td>
+                <td>Port forwarding</td>
+                <td><code>kubectl port-forward svc/frontend-service 8080:8080 -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl scale</code></td>
+                <td>Scale replicas</td>
+                <td><code>kubectl scale deployment auth-service --replicas=3 -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl apply</code></td>
+                <td>Apply manifests</td>
+                <td><code>kubectl apply -f k8s/ -n microservices-app</code></td>
+            </tr>
+            <tr>
+                <td><code>kubectl delete</code></td>
+                <td>Delete resources</td>
+                <td><code>kubectl delete -f k8s/ -n microservices-app</code></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section" id="verification">
+        <h2>7. Verification Steps</h2>
+        
+        <h3>Pod Verification:</h3>
+        <div class="command">kubectl get pods -n microservices-app</div>
+        <p><strong>Expected:</strong> All pods in Running state</p>
+
+        <h3>Service Verification:</h3>
+        <div class="command">kubectl get services -n microservices-app</div>
+        <p><strong>Expected:</strong> All services with ClusterIP type</p>
+
+        <h3>Ingress Verification:</h3>
+        <div class="command">kubectl get ingress -n microservices-app</div>
+        <p><strong>Expected:</strong> Ingress with proper address</p>
+
+        <h3>Application Access:</h3>
+        <div class="command">minikube ip  # Get cluster IP</div>
+        <p>Access via: <code>http://&lt;minikube-ip&gt;/frontend</code></p>
+
+        <h3>Database Connectivity:</h3>
+        <div class="command">kubectl exec -it deployment/mysql-deployment -n microservices-app -- mysql -u root -p</div>
+        <p><strong>Expected:</strong> Successful database connection</p>
+
+        <h3>Service Communication:</h3>
+        <div class="command">kubectl exec -it deployment/auth-service -n microservices-app -- curl http://mysql-service:3306</div>
+        <p><strong>Expected:</strong> Services can communicate with database</p>
+
+        <h3>Logs Verification:</h3>
+        <div class="command">kubectl logs -f deployment/frontend-service -n microservices-app</div>
+        <p><strong>Expected:</strong> No error messages in logs</p>
+    </div>
+
+    <div class="section">
+        <h2>Troubleshooting</h2>
+        
+        <h3>Common Issues:</h3>
+        
+        <h4>Pods not starting:</h4>
+        <ul>
+            <li>Check image availability: <code>kubectl describe pod &lt;pod-name&gt;</code></li>
+            <li>Verify resources: <code>kubectl get nodes</code></li>
+        </ul>
+
+        <h4>Service not accessible:</h4>
+        <ul>
+            <li>Check service endpoints: <code>kubectl get endpoints</code></li>
+            <li>Verify pod labels: <code>kubectl get pods --show-labels</code></li>
+        </ul>
+
+        <h4>Ingress not working:</h4>
+        <ul>
+            <li>Check ingress controller: <code>kubectl get pods -n ingress-nginx</code></li>
+            <li>Verify ingress rules: <code>kubectl describe ingress</code></li>
+        </ul>
+
+        <h4>Database connection issues:</h4>
+        <ul>
+            <li>Check PVC status: <code>kubectl get pvc</code></li>
+            <li>Verify secrets: <code>kubectl get secrets</code></li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Conclusion</h2>
+        <p>This Kubernetes deployment provides a robust, scalable, and highly available infrastructure for the microservices bookstore application. The architecture ensures fault tolerance, easy scaling, and efficient resource utilization while maintaining security best practices.</p>
+        <p>The deployment is production-ready and can be easily extended with additional monitoring, logging, and security features as needed.</p>
+    </div>
+
+    <div style="text-align: center; margin-top: 50px; color: #7f8c8d;">
+        <p>End of Report - Assignment-2 Kubernetes Deployment</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microservices-config
+  namespace: microservices-app
+data:
+  MYSQL_DATABASE: "bookstore"
+  MYSQL_HOST: "mysql-service"
+  AUTH_SERVICE_NAME: "auth-service"
+  USER_SERVICE_NAME: "user-service"
+  BOOK_SERVICE_NAME: "book-service"
+  REVIEW_SERVICE_NAME: "review-service"
+  CART_SERVICE_NAME: "cart-service"
+  ORDER_SERVICE_NAME: "order-service"
+  PAYMENT_SERVICE_NAME: "payment-service"
+  NOTIFICATION_SERVICE_NAME: "notification-service"
+  FRONTEND_SERVICE_NAME: "frontend-service"

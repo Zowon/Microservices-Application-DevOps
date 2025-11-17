@@ -1,0 +1,80 @@
+Microservices Application Architecture on Kubernetes
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                   USER                                         │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                            │
+                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                INGRESS CONTROLLER                              │
+│                            (nginx.ingress.kubernetes.io)                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                            │
+                    ┌───────────────────────┼───────────────────────┐
+                    ▼                       ▼                       ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ FRONTEND SERVICE│ │  AUTH SERVICE   │ │  USER SERVICE   │ │  BOOK SERVICE   │
+│   (ClusterIP)   │ │   (ClusterIP)   │ │   (ClusterIP)   │ │   (ClusterIP)   │
+│ Port: 8080      │ │ Port: 5001      │ │ Port: 5002      │ │ Port: 5003      │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+         │                   │                   │                   │
+         ▼                   ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ FRONTEND PODS   │ │   AUTH PODS     │ │   USER PODS     │ │   BOOK PODS     │
+│ (2 replicas)    │ │ (2 replicas)    │ │ (2 replicas)    │ │ (2 replicas)    │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+
+                    ┌───────────────────────┼───────────────────────┐
+                    ▼                       ▼                       ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ REVIEW SERVICE  │ │  CART SERVICE   │ │ ORDER SERVICE   │ │PAYMENT SERVICE  │
+│   (ClusterIP)   │ │   (ClusterIP)   │ │   (ClusterIP)   │ │   (ClusterIP)   │
+│ Port: 5004      │ │ Port: 5005      │ │ Port: 5006      │ │ Port: 5007      │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+         │                   │                   │                   │
+         ▼                   ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  REVIEW PODS    │ │   CART PODS     │ │  ORDER PODS     │ │ PAYMENT PODS    │
+│ (2 replicas)    │ │ (2 replicas)    │ │ (2 replicas)    │ │ (2 replicas)    │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+
+                                            │
+                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              NOTIFICATION SERVICE                              │
+│                                   (ClusterIP)                                  │
+│                                     Port: 5008                                  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                            │
+                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              NOTIFICATION PODS                                 │
+│                                  (2 replicas)                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                                            │
+                    ┌───────────────────────┼───────────────────────┐
+                    ▼                       ▼                       ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  AUTH SERVICE   │ │  USER SERVICE   │ │  BOOK SERVICE   │ │ ORDER SERVICE   │
+│                 │ │                 │ │                 │ │                 │
+│   MYSQL DB      │ │   MYSQL DB      │ │   MYSQL DB      │ │   MYSQL DB      │
+│ DEPENDENCY      │ │ DEPENDENCY      │ │ DEPENDENCY      │ │ DEPENDENCY      │
+└─────────────────┘ └─────────────────┘ └─────────────────┘ └─────────────────┘
+                                            │
+                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                 MYSQL DATABASE                                  │
+│                                    (StatefulSet)                                 │
+│                                 Port: 3306                                       │
+│                              Persistent Volume                                   │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+Key Components:
+- Ingress Controller: Routes external traffic to appropriate services
+- Services: Provide stable network endpoints for pods
+- Deployments: Manage pod replicas and ensure availability
+- ConfigMaps: Store configuration data
+- Secrets: Store sensitive data (passwords)
+- PersistentVolumeClaim: Provides persistent storage for MySQL
+- MySQL Database: Stateful component with persistent storage
